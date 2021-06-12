@@ -8,12 +8,18 @@ public class Line : MonoBehaviour
 {
     public float speed = 10f;
     public float maxLineLength = 8f;
+    public Collider2D hook;
+    public LayerMask layerMask;
     Material _trailRendererMaterial;
     TrailRenderer _trailRenderer;
     LineRenderer _lineRenderer;
     Transform _startingPosition;
     Vector3[] _linePositions;
-    Vector3 _lastAcceptableStartingPosition;
+
+    float _hookWidth;
+
+    const float SKIN_WIDTH = 0.1f;
+    const float COLLISION_DISTANCE = 0.05f;
 
     private void Awake()
     {
@@ -25,13 +31,26 @@ public class Line : MonoBehaviour
         _trailRendererMaterial.SetFloat("_AmountY", transform.right.x);
 
         _lineRenderer.enabled = false;
+
+        _hookWidth = hook.bounds.size.x;
+    }
+
+    void CheckForImpact()
+    {
+        var hookSize = transform.right * (_hookWidth - SKIN_WIDTH);
+        var hit = Physics2D.Raycast(transform.position + hookSize, transform.right, COLLISION_DISTANCE, layerMask);
+        if (hit)
+        {
+            StopLine();
+        }
     }
 
     // Update is called once per frame
     void Update()
     {
+        CheckForImpact();
         if (speed != 0)
-        {
+        {            
             var move = transform.right * speed * Time.deltaTime;
             transform.Translate(move, Space.World);
             _trailRendererMaterial.SetFloat("_FixX", transform.position.x);
@@ -40,14 +59,13 @@ public class Line : MonoBehaviour
         else
         {
             var lineLength = GetLineLength();
-            print($"Line length ={lineLength}");
             if (GetLineLength() > maxLineLength)
             {
-                _startingPosition.position = _lastAcceptableStartingPosition;
+                //TODO
             }
             else
             {
-                _lastAcceptableStartingPosition = _startingPosition.position;
+                //TODO
             }
         }
     }
@@ -75,6 +93,5 @@ public class Line : MonoBehaviour
         _lineRenderer.enabled = true;
         _lineRenderer.SetPositions(_linePositions);
         _linePositions = new Vector3[] { _startingPosition.position, transform.position };
-        _lastAcceptableStartingPosition = _startingPosition.position;
     }
 }

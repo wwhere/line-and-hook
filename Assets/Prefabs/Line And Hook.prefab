@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4717947471387722805}
   - component: {fileID: 5137395297770867913}
+  - component: {fileID: 1141447473147640455}
   m_Layer: 0
   m_Name: Hook
   m_TagString: Untagged
@@ -82,6 +83,32 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
+--- !u!61 &1141447473147640455
+BoxCollider2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6182869542826256083}
+  m_Enabled: 1
+  m_Density: 1
+  m_Material: {fileID: 0}
+  m_IsTrigger: 1
+  m_UsedByEffector: 0
+  m_UsedByComposite: 0
+  m_Offset: {x: 0.12171842, y: 0.0038281567}
+  m_SpriteTilingProperty:
+    border: {x: 0, y: 0, z: 0, w: 0}
+    pivot: {x: 0, y: 0.5}
+    oldSize: {x: 0.32, y: 0.26}
+    newSize: {x: 0.32, y: 0.26}
+    adaptiveTilingThreshold: 0.5
+    drawMode: 0
+    adaptiveTiling: 0
+  m_AutoTiling: 0
+  serializedVersion: 2
+  m_Size: {x: 0.24343684, y: 0.0992173}
+  m_EdgeRadius: 0
 --- !u!1 &8795824099185223707
 GameObject:
   m_ObjectHideFlags: 0
@@ -130,6 +157,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   speed: 10
   maxLineLength: 8
+  hook: {fileID: 1141447473147640455}
+  layerMask:
+    serializedVersion: 2
+    m_Bits: 128
 --- !u!96 &644726601
 TrailRenderer:
   serializedVersion: 2
