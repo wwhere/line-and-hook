@@ -23,7 +23,7 @@ public class GrappleHook : MonoBehaviour
         }
     }
 
-    public void Fire(Vector3 fromPosition, Vector3 toPosition)
+    public Line Fire(Vector3 fromPosition, Vector3 toPosition)
     {
         var direction = (toPosition - fromPosition).normalized;
         var lineUpwards = Vector3.Cross(direction, Vector3.back).normalized;
@@ -34,6 +34,7 @@ public class GrappleHook : MonoBehaviour
         firedLine.SetStartingPosition(transform);
         timeLineFired = Time.time;
         isLineFired = true;
+        return firedLine;
     }
 
     float GetSpeedPerSecondForLine()

@@ -40,7 +40,7 @@ public class Player : MonoBehaviour
 
     void FireLine()
     {
-        _grappleHook.Fire(transform.position, GetMouseWorldPosition());
+        var firedLine = _grappleHook.Fire(transform.position, GetMouseWorldPosition());
     }
 
     Vector3 GetMouseWorldPosition()
