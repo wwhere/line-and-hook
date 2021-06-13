@@ -47,3 +47,6 @@ TagManager:
   - name: Line
     uniqueID: 2212069931
     locked: 0
+  - name: Structure
+    uniqueID: 340619617
+    locked: 0
