@@ -41,6 +41,10 @@ public class Player : MonoBehaviour
     void FireLine()
     {
         var firedLine = _grappleHook.Fire(transform.position, GetMouseWorldPosition());
+        if (firedLine != null)
+        {
+            //TODO
+        }
     }
 
     Vector3 GetMouseWorldPosition()

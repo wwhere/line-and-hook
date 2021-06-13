@@ -8,8 +8,11 @@ public class Line : MonoBehaviour
 {
     public float speed = 10f;
     public float maxLineLength = 8f;
-    public Collider2D hook;
+    public SpriteRenderer hookRenderer;
+    public GameObject breakEffect;
     public LayerMask layerMask;
+    public AudioClip impactSound;
+
     Material _trailRendererMaterial;
     TrailRenderer _trailRenderer;
     LineRenderer _lineRenderer;
@@ -18,8 +21,8 @@ public class Line : MonoBehaviour
 
     float _hookWidth;
 
-    const float SKIN_WIDTH = 0.1f;
-    const float COLLISION_DISTANCE = 0.05f;
+    const float SKIN_WIDTH = 0.01f;
+    const float COLLISION_DISTANCE = 0.02f;
 
     private void Awake()
     {
@@ -32,17 +35,32 @@ public class Line : MonoBehaviour
 
         _lineRenderer.enabled = false;
 
-        _hookWidth = hook.bounds.size.x;
+        _hookWidth = hookRenderer.bounds.size.x;
     }
 
     void CheckForImpact()
     {
-        var hookSize = transform.right * (_hookWidth - SKIN_WIDTH);
-        var hit = Physics2D.Raycast(transform.position + hookSize, transform.right, COLLISION_DISTANCE, layerMask);
-        if (hit)
+        if (speed != 0)
         {
-            StopLine();
+            var hookSize = transform.right * (_hookWidth - SKIN_WIDTH);
+            var hit = Physics2D.Raycast(transform.position + hookSize, transform.right, COLLISION_DISTANCE, layerMask);
+            if (hit)
+            {
+                Debug.Log(_hookWidth + " " + hookRenderer.bounds.size.x);
+                PlayImpactSound();
+                ShowBreak();
+                StopLine();
+            }
         }
+    }
+
+    private void OnDrawGizmos()
+    {
+        Gizmos.color = Color.green;
+        Gizmos.DrawCube(transform.position, new Vector3(0.1f, 0.1f, 0.1f));
+        var hookSize = transform.right * (_hookWidth - SKIN_WIDTH);
+        Gizmos.color = Color.red;
+        Gizmos.DrawCube(transform.position + hookSize, new Vector3(0.1f, 0.1f, 0.1f));
     }
 
     // Update is called once per frame
@@ -86,6 +104,15 @@ public class Line : MonoBehaviour
         this.speed = speed;
     }
 
+    void ShowBreak()
+    {
+        breakEffect.SetActive(true);
+    }
+    void HideBreak()
+    {
+        breakEffect.SetActive(false);
+    }
+
     public void StopLine()
     {
         speed = 0;
@@ -93,5 +120,10 @@ public class Line : MonoBehaviour
         _lineRenderer.enabled = true;
         _lineRenderer.SetPositions(_linePositions);
         _linePositions = new Vector3[] { _startingPosition.position, transform.position };
+    }
+
+    void PlayImpactSound()
+    {
+        AudioSource.PlayClipAtPoint(impactSound, transform.position);
     }
 }

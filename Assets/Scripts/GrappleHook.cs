@@ -5,40 +5,65 @@ using UnityEngine;
 public class GrappleHook : MonoBehaviour
 {
     public GameObject lineAndHook;
+    public AudioClip fireLineSound;
 
     public float lineLength = 5f;
     public float lineTimeToFullLength = .5f;
-    bool isLineFired = false;
-    float timeLineFired;
-    Line firedLine;
+
+    GrappleHookState _state = GrappleHookState.ReadyToFire;
+
+    float _timeLineFired;
+    Line _firedLine;
 
     private void Update()
     {
-        if (isLineFired)
+        if (_state == GrappleHookState.Firing)
         {
-            if (Time.time >= timeLineFired + lineTimeToFullLength)
+            if (Time.time >= _timeLineFired + lineTimeToFullLength)
             {
-                firedLine.StopLine();
+                _state = GrappleHookState.ShotComplete;
+                _firedLine.StopLine();
             }
         }
     }
 
     public Line Fire(Vector3 fromPosition, Vector3 toPosition)
     {
-        var direction = (toPosition - fromPosition).normalized;
-        var lineUpwards = Vector3.Cross(direction, Vector3.back).normalized;
-        Quaternion rotation = Quaternion.LookRotation(Vector3.forward, lineUpwards);
-        firedLine = GameObject.Instantiate(lineAndHook, fromPosition, rotation).GetComponent<Line>();
+        if (_state == GrappleHookState.ReadyToFire)
+        {
+            PlayFireLineSound();
+            var direction = (toPosition - fromPosition).normalized;
+            var lineUpwards = Vector3.Cross(direction, Vector3.back).normalized;
+            Quaternion rotation = Quaternion.LookRotation(Vector3.forward, lineUpwards);
+            _firedLine = GameObject.Instantiate(lineAndHook, fromPosition, rotation).GetComponent<Line>();
 
-        firedLine.SetSpeed(GetSpeedPerSecondForLine());
-        firedLine.SetStartingPosition(transform);
-        timeLineFired = Time.time;
-        isLineFired = true;
-        return firedLine;
+            _firedLine.SetSpeed(GetSpeedPerSecondForLine());
+            _firedLine.SetStartingPosition(transform);
+            _timeLineFired = Time.time;
+            _state = GrappleHookState.Firing;
+            return _firedLine;
+        }
+        else
+        {
+            return null;
+        }
     }
 
     float GetSpeedPerSecondForLine()
     {
         return lineLength / lineTimeToFullLength;
+    }
+
+    void PlayFireLineSound()
+    {
+        AudioSource.PlayClipAtPoint(fireLineSound, transform.position);
+    }
+    
+    private enum GrappleHookState
+    {
+        ReadyToFire,
+        Firing,
+        ShotComplete,
+        GettingReadyToFire
     }
 }
