@@ -2,22 +2,24 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-[RequireComponent(typeof(TrailRenderer))]
 [RequireComponent(typeof(LineRenderer))]
 public class Line : MonoBehaviour
 {
     public float speed = 10f;
     public float maxLineLength = 8f;
+    public int numberOfPoints = 10;
+    public float gravity = 5f;
     public SpriteRenderer hookRenderer;
     public GameObject breakEffect;
     public LayerMask layerMask;
     public AudioClip impactSound;
 
-    Material _trailRendererMaterial;
-    TrailRenderer _trailRenderer;
+
+    Material _lineRendererMaterial;
     LineRenderer _lineRenderer;
     Transform _startingPosition;
     Vector3[] _linePositions;
+    float _gravitySpeed;
 
     float _hookWidth;
 
@@ -26,16 +28,32 @@ public class Line : MonoBehaviour
 
     private void Awake()
     {
-        _trailRenderer = GetComponent<TrailRenderer>();
         _lineRenderer = GetComponent<LineRenderer>();
 
-        _trailRendererMaterial = _trailRenderer.material;
-        _trailRendererMaterial.SetFloat("_AmountX", transform.right.y);
-        _trailRendererMaterial.SetFloat("_AmountY", transform.right.x);
+        _lineRendererMaterial = _lineRenderer.material;
+        _lineRendererMaterial.SetFloat("_AmountX", transform.right.y);
+        _lineRendererMaterial.SetFloat("_AmountY", transform.right.x);
 
-        _lineRenderer.enabled = false;
+        _startingPosition = transform;
 
         _hookWidth = hookRenderer.bounds.size.x;
+        _gravitySpeed = 0;
+    }
+
+    void UpdateLinePositions()
+    {
+        _linePositions = new Vector3[numberOfPoints];
+        _linePositions[0] = _startingPosition.position;
+        _linePositions[numberOfPoints - 1] = transform.position;
+        if (numberOfPoints > 2)
+        {
+            for (var i = 1; i < numberOfPoints - 1; i++)
+            {
+                _linePositions[i] = Vector3.Lerp(_linePositions[0], _linePositions[numberOfPoints - 1], i / (float)numberOfPoints);
+            }
+        }
+        _lineRenderer.positionCount = numberOfPoints;
+        _lineRenderer.SetPositions(_linePositions);
     }
 
     void CheckForImpact()
@@ -46,7 +64,6 @@ public class Line : MonoBehaviour
             var hit = Physics2D.Raycast(transform.position + hookSize, transform.right, COLLISION_DISTANCE, layerMask);
             if (hit)
             {
-                Debug.Log(_hookWidth + " " + hookRenderer.bounds.size.x);
                 PlayImpactSound();
                 ShowBreak();
                 StopLine();
@@ -54,25 +71,22 @@ public class Line : MonoBehaviour
         }
     }
 
-    private void OnDrawGizmos()
-    {
-        Gizmos.color = Color.green;
-        Gizmos.DrawCube(transform.position, new Vector3(0.1f, 0.1f, 0.1f));
-        var hookSize = transform.right * (_hookWidth - SKIN_WIDTH);
-        Gizmos.color = Color.red;
-        Gizmos.DrawCube(transform.position + hookSize, new Vector3(0.1f, 0.1f, 0.1f));
-    }
-
     // Update is called once per frame
     void Update()
     {
         CheckForImpact();
         if (speed != 0)
-        {            
+        {
+            _gravitySpeed += gravity * Time.deltaTime;
             var move = transform.right * speed * Time.deltaTime;
+            move -= Vector3.up * _gravitySpeed * Time.deltaTime;
             transform.Translate(move, Space.World);
-            _trailRendererMaterial.SetFloat("_FixX", transform.position.x);
-            _trailRendererMaterial.SetFloat("_FixY", transform.position.y);
+            _lineRendererMaterial.SetFloat("_FixX", transform.position.x);
+            _lineRendererMaterial.SetFloat("_FixY", transform.position.y);
+
+            var lineUpwards = Vector3.Cross(move, Vector3.back).normalized;
+            Quaternion rotation = Quaternion.LookRotation(Vector3.forward, lineUpwards);
+            transform.rotation = Quaternion.RotateTowards(transform.rotation, rotation, speed * Time.deltaTime);
         }
         else
         {
@@ -86,11 +100,12 @@ public class Line : MonoBehaviour
                 //TODO
             }
         }
+        UpdateLinePositions();
     }
 
     float GetLineLength()
     {
-        return (_linePositions[0] - _linePositions[1]).magnitude;
+        return (_linePositions[0] - _linePositions[numberOfPoints - 1]).magnitude;
     }
 
     public void SetStartingPosition(Transform startingPosition)
@@ -116,10 +131,7 @@ public class Line : MonoBehaviour
     public void StopLine()
     {
         speed = 0;
-        _trailRenderer.enabled = false;
-        _lineRenderer.enabled = true;
-        _lineRenderer.SetPositions(_linePositions);
-        _linePositions = new Vector3[] { _startingPosition.position, transform.position };
+        _lineRendererMaterial.SetFloat("_Amount", 0);
     }
 
     void PlayImpactSound()

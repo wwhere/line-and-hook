@@ -310,8 +310,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   lineAndHook: {fileID: 8795824099185223707, guid: caa17ef3968155b43be2b19d37e277da, type: 3}
   fireLineSound: {fileID: 8300000, guid: f81fad1908577ca4e9a0e89586158a92, type: 3}
-  lineLength: 5
-  lineTimeToFullLength: 0.5
+  lineLength: 25
+  lineTimeToFullLength: 2
 --- !u!82 &366801720
 AudioSource:
   m_ObjectHideFlags: 0

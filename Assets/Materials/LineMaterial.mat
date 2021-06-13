@@ -25,14 +25,14 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Floats:
     - _Amount: 0.1
-    - _AmountX: 0
-    - _AmountY: 0
-    - _Amplitude: 8
-    - _FixX: 1
-    - _FixY: 1
+    - _AmountX: 0.9890214
+    - _AmountY: -0.1477722
+    - _Amplitude: 6
+    - _FixX: -0.5778843
+    - _FixY: 3.8829796
     - _Glossiness: 0.5
     - _Metallic: 0
-    - _Speed: 1
+    - _Speed: 20
     m_Colors:
     - _Color: {r: 0.49056602, g: 0.18697044, b: 0.33254272, a: 1}
     - _Colour: {r: 0.103773594, g: 0.053346846, b: 0.028782485, a: 1}
