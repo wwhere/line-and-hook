@@ -27,6 +27,26 @@ public class GrappleHook : MonoBehaviour
         }
     }
 
+    public Line Retract()
+    {
+        if (_state == GrappleHookState.Firing || _state == GrappleHookState.ShotComplete)
+        {
+            _firedLine.Retract();
+            _state = GrappleHookState.GettingReadyToFire;
+            _firedLine.OnDoneRetracting += DoneRetracting;
+            return _firedLine;
+        }
+        else
+        {
+            return null;
+        }
+    }
+
+    void DoneRetracting()
+    {
+        _state = GrappleHookState.ReadyToFire;
+    }
+
     public Line Fire(Vector3 fromPosition, Vector3 toPosition)
     {
         if (_state == GrappleHookState.ReadyToFire)

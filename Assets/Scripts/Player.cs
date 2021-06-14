@@ -36,12 +36,27 @@ public class Player : MonoBehaviour
         {
             FireLine();            
         }
+
+
+        if (Input.GetMouseButtonDown(1))
+        {
+            RetractLine();
+        }
     }
 
     void FireLine()
     {
         var firedLine = _grappleHook.Fire(transform.position, GetMouseWorldPosition());
         if (firedLine != null)
+        {
+            //TODO
+        }
+    }
+
+    void RetractLine()
+    {
+        var retractingLine = _grappleHook.Retract();
+        if (retractingLine != null)
         {
             //TODO
         }
