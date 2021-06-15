@@ -10,7 +10,9 @@ public class Line : MonoBehaviour
     public float maxLineLength = 8f;
     public int numberOfPoints = 10;
     public float gravity = 5f;
+    public float maxGravitySpeed = 8f;
     public float lineGravity = 2f;
+    public float maxLineGravitySpeed = 6f;
     public SpriteRenderer hookRenderer;
     public GameObject breakEffect;
     public LayerMask layerMask;
@@ -91,6 +93,7 @@ public class Line : MonoBehaviour
             if (speed != 0)
             {
                 _gravitySpeed += gravity * Time.deltaTime;
+                _gravitySpeed = Mathf.Min(maxGravitySpeed, _gravitySpeed);
                 var move = transform.right * speed * Time.deltaTime;
                 move -= Vector3.up * _gravitySpeed * Time.deltaTime;
                 transform.Translate(move, Space.World);
@@ -121,7 +124,9 @@ public class Line : MonoBehaviour
 
             //each line position moves towards the previous one
             _lineGravitySpeed += lineGravity * Time.deltaTime;
+            _lineGravitySpeed = Mathf.Min(maxLineGravitySpeed, _lineGravitySpeed);
             _gravitySpeed += gravity * Time.deltaTime;
+            _gravitySpeed = Mathf.Min(maxGravitySpeed, _gravitySpeed);
             var originalPositions = CloneLinePositions();
             var removedPositions = new HashSet<int>();
             //start at 1, 0 is always starting position
