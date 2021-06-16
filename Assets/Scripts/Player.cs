@@ -8,32 +8,21 @@ public class Player : MonoBehaviour
 {
     public float speed = 100f;
 
-    float _moveAmount;
+    Vector3 _moveAmount;
 
     GrappleHook _grappleHook;
     CircleCollider2D _collider;
-
-    float _apotema;
-    float _side;
 
     private void Start()
     {
         _grappleHook = GetComponent<GrappleHook>();
         _collider = GetComponent<CircleCollider2D>();
-
-        CalculateHexagonValues();
-    }
-
-    void CalculateHexagonValues()
-    {
-        _side = _collider.bounds.size.x / 2;
-        _apotema = _side / (2 * Mathf.Tan(30));
     }
 
     void Update()
     {
-        _moveAmount = Input.GetAxis("Horizontal") * speed * Time.deltaTime;
-
+        _moveAmount = new Vector3(Input.GetAxis("Horizontal") * speed * Time.deltaTime, 0, 0);
+        transform.Translate(_moveAmount);
 
         if (Input.GetMouseButtonDown(0))
         {
