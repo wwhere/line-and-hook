@@ -40,7 +40,7 @@ public class Player : MonoBehaviour
 
         if (Input.GetMouseButtonDown(1))
         {
-            RetractLine();
+            ReelLine();
         }
     }
 
@@ -53,9 +53,9 @@ public class Player : MonoBehaviour
         }
     }
 
-    void RetractLine()
+    void ReelLine()
     {
-        var retractingLine = _grappleHook.Retract();
+        var retractingLine = _grappleHook.Reel();
         if (retractingLine != null)
         {
             //TODO

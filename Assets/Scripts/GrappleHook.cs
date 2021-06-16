@@ -27,19 +27,17 @@ public class GrappleHook : MonoBehaviour
         }
     }
 
-    public Line Retract()
+    public Line Reel()
     {
-        if (_state == GrappleHookState.Firing || _state == GrappleHookState.ShotComplete)
-        {
-            _firedLine.Retract();
-            _state = GrappleHookState.GettingReadyToFire;
-            _firedLine.OnDoneRetracting += DoneRetracting;
-            return _firedLine;
-        }
-        else
-        {
-            return null;
-        }
+        return null;
+    }
+
+    Line Retract()
+    {
+        _firedLine.Retract();
+        _state = GrappleHookState.GettingReadyToFire;
+        _firedLine.OnDoneRetracting += DoneRetracting;
+        return _firedLine;
     }
 
     void DoneRetracting()
@@ -62,6 +60,10 @@ public class GrappleHook : MonoBehaviour
             _timeLineFired = Time.time;
             _state = GrappleHookState.Firing;
             return _firedLine;
+        }
+        else if (_state == GrappleHookState.Firing || _state == GrappleHookState.ShotComplete)
+        {
+            return Retract();
         }
         else
         {
