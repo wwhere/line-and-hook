@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-[RequireComponent(typeof(Rigidbody2D))]
+[RequireComponent(typeof(CircleCollider2D))]
 [RequireComponent(typeof(GrappleHook))]
 public class Player : MonoBehaviour
 {
@@ -10,31 +10,34 @@ public class Player : MonoBehaviour
 
     float _moveAmount;
 
-    Rigidbody2D _rigidbody;
-
     GrappleHook _grappleHook;
+    CircleCollider2D _collider;
+
+    float _apotema;
+    float _side;
 
     private void Start()
     {
-        _rigidbody = GetComponent<Rigidbody2D>();
         _grappleHook = GetComponent<GrappleHook>();
+        _collider = GetComponent<CircleCollider2D>();
+
+        CalculateHexagonValues();
+    }
+
+    void CalculateHexagonValues()
+    {
+        _side = _collider.bounds.size.x / 2;
+        _apotema = _side / (2 * Mathf.Tan(30));
     }
 
     void Update()
     {
-        if (Input.GetAxisRaw("Horizontal") == 0)
-        {
-            _rigidbody.velocity = new Vector2(0, _rigidbody.velocity.y);
-        }
-        else
-        {
-            _moveAmount = Input.GetAxis("Horizontal") * speed * Time.deltaTime;
-            _rigidbody.AddForce(new Vector2(_moveAmount, 0));
-        }
+        _moveAmount = Input.GetAxis("Horizontal") * speed * Time.deltaTime;
+
 
         if (Input.GetMouseButtonDown(0))
         {
-            FireLine();            
+            FireLine();
         }
 
 
