@@ -22,7 +22,7 @@ public class GrappleHook : MonoBehaviour
             if (Time.time >= _timeLineFired + lineTimeToFullLength)
             {
                 _state = GrappleHookState.ShotComplete;
-                _firedLine.StopLine();
+                _firedLine.GetUnhooked();
             }
         }
     }
@@ -34,9 +34,9 @@ public class GrappleHook : MonoBehaviour
 
     Line Retract()
     {
-        _firedLine.Retract();
+        _firedLine.StartRetracting();
         _state = GrappleHookState.GettingReadyToFire;
-        _firedLine.OnDoneRetracting += DoneRetracting;
+        _firedLine.OnFinishRetracting += DoneRetracting;
         return _firedLine;
     }
 
@@ -55,8 +55,19 @@ public class GrappleHook : MonoBehaviour
             Quaternion rotation = Quaternion.LookRotation(Vector3.forward, lineUpwards);
             _firedLine = GameObject.Instantiate(lineAndHook, fromPosition, rotation).GetComponent<Line>();
 
-            _firedLine.SetSpeed(GetSpeedPerSecondForLine());
-            _firedLine.SetStartingPosition(transform);
+            _firedLine.StartExtending(transform, GetSpeedPerSecondForLine());
+            _firedLine.OnStartRetracting += () =>
+            {
+                _state = GrappleHookState.GettingReadyToFire;
+            };
+            _firedLine.OnFinishRetracting += () =>
+            {
+                _state = GrappleHookState.ReadyToFire;
+            };
+            _firedLine.OnGettingHooked += () =>
+            {
+                _state = GrappleHookState.ShotComplete;
+            };
             _timeLineFired = Time.time;
             _state = GrappleHookState.Firing;
             return _firedLine;
