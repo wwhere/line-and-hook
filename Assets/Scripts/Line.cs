@@ -7,7 +7,7 @@ public class Line : MonoBehaviour
 {
     public float retractingSpeed = 15f;
     public float maxLineLength = 8f;
-    [Range(2,1000)]
+    [Range(2, 1000)]
     public int numberOfPoints = 10;
     public float gravity = 5f;
     public float maxGravitySpeed = 8f;
@@ -17,7 +17,7 @@ public class Line : MonoBehaviour
     public GameObject breakEffect;
     public LayerMask layerMask;
     public AudioClip impactSound;
-    
+
     [HideInInspector]
     public LineState LineState = LineState.Idle;
 
@@ -25,11 +25,13 @@ public class Line : MonoBehaviour
     LineRenderer _lineRenderer;
     Transform _startingPosition;
     Vector3[] _linePositions;
-    
+
     float _speed;
     float _gravitySpeed;
     float _lineGravitySpeed;
     float _hookWidth;
+
+    bool _isClimbing;
 
     const float SKIN_WIDTH = 0.01f;
     const float COLLISION_DISTANCE = 0.02f;
@@ -44,10 +46,11 @@ public class Line : MonoBehaviour
 
         _startingPosition = transform;
         _hookWidth = hookRenderer.bounds.size.x;
-        
+
         _speed = 0;
         _gravitySpeed = 0;
         _lineGravitySpeed = 0;
+        _isClimbing = false;
 
         LineState = LineState.Idle;
     }
@@ -82,7 +85,12 @@ public class Line : MonoBehaviour
 
     void HandleHooked()
     {
+        if (_isClimbing)
+        {
+            ClimbLine();
 
+            _isClimbing = false;
+        }
     }
 
     void HandleExtending()
@@ -102,7 +110,7 @@ public class Line : MonoBehaviour
         _linePositions = GetLinePositions(_startingPosition.position, transform.position, numberOfPoints);
         UpdateLineRendererPositions(_lineRenderer, _linePositions);
     }
-    
+
     void HandleRetracting()
     {
         //each line position moves towards the previous one
@@ -110,13 +118,14 @@ public class Line : MonoBehaviour
         UpdateGravitySpeed();
         RetractLine();
     }
-        
+
     #region State changes and events
 
     public event System.Action<Transform, float> OnStartExtending;
     public event System.Action OnStopExtending;
 
     public event System.Action OnGettingHooked;
+    public event System.Func<Vector3, Vector3> OnClimbing;
     public event System.Action OnReleasingHooked;
 
     public event System.Action OnGettingUnhooked;
@@ -153,7 +162,7 @@ public class Line : MonoBehaviour
 
         _speed = 0;
         StopLineOndulating();
-        
+
         LineState = LineState.Unhooked;
         StartRetracting();
     }
@@ -175,6 +184,15 @@ public class Line : MonoBehaviour
     {
         OnFinishRetracting?.Invoke();
         Destroy(gameObject);
+    }
+
+    #endregion
+
+    #region Input
+
+    public void Climb()
+    {
+        _isClimbing = true;
     }
 
     #endregion
@@ -327,6 +345,25 @@ public class Line : MonoBehaviour
         }
     }
 
+    void ClimbLine()
+    {
+        var originalPositions = _linePositions.ClonePositions();
+
+        //start at 0, last one is always hook position which is static here
+        for (var i = 0; i < _linePositions.Length - 1; i++)
+        {
+            var direction = (originalPositions[i + 1] - originalPositions[i]).normalized;
+            var moveAmount = direction * retractingSpeed * Time.deltaTime;
+            moveAmount -= Vector3.up * _lineGravitySpeed * Time.deltaTime;
+            _linePositions[i] += moveAmount;
+        }
+
+        var newPosition = OnClimbing?.Invoke(_linePositions[0]);
+        if (newPosition.HasValue)
+            _linePositions[0] = newPosition.Value;
+
+        UpdateLineRendererPositions(_lineRenderer, _linePositions);
+    }
 
     #endregion
 

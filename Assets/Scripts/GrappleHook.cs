@@ -29,6 +29,11 @@ public class GrappleHook : MonoBehaviour
 
     public Line Reel()
     {
+        if (_state == GrappleHookState.ShotComplete)
+        {
+            _firedLine.Climb();
+            return _firedLine;
+        }
         return null;
     }
 
@@ -67,6 +72,7 @@ public class GrappleHook : MonoBehaviour
             _firedLine.OnGettingHooked += () =>
             {
                 _state = GrappleHookState.ShotComplete;
+                _firedLine.OnClimbing += UpdatePositionWhenClimbing;
             };
             _timeLineFired = Time.time;
             _state = GrappleHookState.Firing;
@@ -80,6 +86,12 @@ public class GrappleHook : MonoBehaviour
         {
             return null;
         }
+    }
+
+    Vector3 UpdatePositionWhenClimbing(Vector3 newPosition)
+    {
+        transform.position = newPosition;
+        return transform.position;
     }
 
     float GetSpeedPerSecondForLine()
