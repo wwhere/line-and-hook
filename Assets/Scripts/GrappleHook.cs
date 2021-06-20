@@ -88,9 +88,15 @@ public class GrappleHook : MonoBehaviour
         }
     }
 
+    public event System.Func<Vector3, Vector3> OnReeling;
+
     Vector3 UpdatePositionWhenClimbing(Vector3 newPosition)
     {
         transform.position = newPosition;
+        if (OnReeling != null)
+        {
+            transform.position = OnReeling.Invoke(transform.position);
+        }
         return transform.position;
     }
 
