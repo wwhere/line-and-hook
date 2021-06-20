@@ -80,7 +80,11 @@ public class Player : MonoBehaviour
             if (hit)
             {
                 verticalMovement = hit.distance - 0.01f;
-                if (hit.distance < 0.02f) return true;
+                if (hit.distance < 0.02f)
+                {
+                    verticalMovement = 0;
+                    return true;
+                }
             }
         }
         return false;
@@ -92,7 +96,12 @@ public class Player : MonoBehaviour
 
         UpdateGravitySpeed();
 
-        _moveAmount = new Vector3(Input.GetAxis("Horizontal") * speed * Time.deltaTime, -_gravitySpeed, 0);
+        var verticalMoveAmount = _gravitySpeed * Time.deltaTime;
+        if (IsGrounded(ref verticalMoveAmount))
+        {
+            _gravitySpeed = 0;
+        }
+        _moveAmount = new Vector3(Input.GetAxis("Horizontal") * speed * Time.deltaTime, -verticalMoveAmount, 0) ;
 
         _moveAmount = UpdateForVerticalCollisions(_moveAmount);
         _moveAmount = UpdateForHorizontalCollisions(_moveAmount);
@@ -128,10 +137,6 @@ public class Player : MonoBehaviour
     {
         _gravitySpeed += gravity * Time.deltaTime;
         _gravitySpeed = Mathf.Min(maxGravitySpeed, _gravitySpeed);
-        if (IsGrounded(ref _gravitySpeed))
-        {
-            _gravitySpeed = 0;
-        }
     }
 
     void FireLine()
