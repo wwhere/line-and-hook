@@ -66,12 +66,6 @@ public class Player : MonoBehaviour
         }
     }
 
-    Vector3 UpdatePositionWhenReeling(Vector3 newPosition)
-    {
-        transform.position = newPosition;
-        return transform.position;
-    }
-
     bool IsGrounded(ref float verticalMovement)
     {
         foreach (var rayOrigin in _bottomRayOrigins)
@@ -92,30 +86,44 @@ public class Player : MonoBehaviour
 
     void Update()
     {
+        //Update ray casting origins based on current position
         UpdateRayOrigins();
-
+        //Apply gravity force to gravity speed
         UpdateGravitySpeed();
 
-        var verticalMoveAmount = _gravitySpeed * Time.deltaTime;
+        //Apply gravity to vertical position of player
+        var verticalMoveAmount = _gravitySpeed * Time.deltaTime;        
         if (IsGrounded(ref verticalMoveAmount))
         {
+            //Reset gravity speed to 0 if touching ground
             _gravitySpeed = 0;
         }
-        _moveAmount = new Vector3(Input.GetAxis("Horizontal") * speed * Time.deltaTime, -verticalMoveAmount, 0) ;
-
+        _moveAmount = new Vector3(Input.GetAxis("Horizontal") * speed * Time.deltaTime, -verticalMoveAmount, 0);
         _moveAmount = UpdateForVerticalCollisions(_moveAmount);
+
+        //Get position from hook and line
+        _moveAmount = _grappleHook.UpdatePositions(_moveAmount);
+
+        //Adjust based on collisions
         _moveAmount = UpdateForHorizontalCollisions(_moveAmount);
 
+        //Update hook and line with adjusted position
+
+        //Check if player is starting to fire or reel
         if (Input.GetMouseButtonDown(0))
         {
             FireLine();
         }
-
-
-        if (Input.GetMouseButton(1))
+        else if (Input.GetMouseButton(1))
         {
             ReelLine();
         }
+    }
+
+    Vector3 UpdatePositionWhenReeling(Vector3 newPosition)
+    {
+        transform.position = newPosition;
+        return transform.position;
     }
 
     Vector3 UpdateForVerticalCollisions(Vector3 moveAmount)
@@ -157,7 +165,7 @@ public class Player : MonoBehaviour
         }
     }
 
-    Vector3 GetMouseWorldPosition()
+    static Vector3 GetMouseWorldPosition()
     {
         Vector3 mousePos = Input.mousePosition;
         mousePos.z = Camera.main.nearClipPlane;

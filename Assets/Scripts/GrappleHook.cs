@@ -27,6 +27,27 @@ public class GrappleHook : MonoBehaviour
         }
     }
 
+    public Vector3 UpdatePositions(Vector3 moveAmount)
+    {
+        var newMoveAmount = moveAmount;
+        switch (_state)
+        {
+            case GrappleHookState.ReadyToFire:
+                break;
+            case GrappleHookState.Firing:
+                break;
+            case GrappleHookState.ShotComplete:
+                _firedLine.UpdatePositions();
+                break;
+            case GrappleHookState.GettingReadyToFire:
+                break;
+            default:
+                break;
+        }
+
+        return newMoveAmount;
+    }
+
     public Line Reel()
     {
         if (_state == GrappleHookState.ShotComplete)

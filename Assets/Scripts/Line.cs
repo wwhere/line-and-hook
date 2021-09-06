@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 [RequireComponent(typeof(LineRenderer))]
@@ -17,6 +18,7 @@ public class Line : MonoBehaviour
     public GameObject breakEffect;
     public LayerMask layerMask;
     public AudioClip impactSound;
+    public int numberOfIterations = 10;
 
     [HideInInspector]
     public LineState LineState = LineState.Idle;
@@ -24,7 +26,8 @@ public class Line : MonoBehaviour
     Material _lineRendererMaterial;
     LineRenderer _lineRenderer;
     Transform _startingPosition;
-    Vector3[] _linePositions;
+    LinePoint[] _linePoints;
+    LineSegment[] _lineSegments;
 
     float _speed;
     float _gravitySpeed;
@@ -107,8 +110,8 @@ public class Line : MonoBehaviour
             UpdateLineOndulation();
             AlignHookToMovement(moveAmount);
         }
-        _linePositions = GetLinePositions(_startingPosition.position, transform.position, numberOfPoints);
-        UpdateLineRendererPositions(_lineRenderer, _linePositions);
+        UpdateLinePointsAndSegments(_startingPosition.position, transform.position, numberOfPoints);
+        UpdateLineRendererPositions(_lineRenderer, _linePoints.Select(l => l.position));
     }
 
     void HandleRetracting()
@@ -137,7 +140,7 @@ public class Line : MonoBehaviour
     {
         OnStartExtending?.Invoke(startingPosition, speed);
         _startingPosition = startingPosition;
-        _linePositions = GetLinePositions(_startingPosition.position, transform.position, numberOfPoints);
+        UpdateLinePointsAndSegments(_startingPosition.position, transform.position, numberOfPoints);
         _speed = speed;
         LineState = LineState.Extending;
     }
@@ -199,14 +202,7 @@ public class Line : MonoBehaviour
 
     #region Helper functions
 
-    /// <summary>
-    /// Calculates the intermediate points in a line from initialPosition to finalPosition
-    /// </summary>
-    /// <param name="initialPosition"></param>
-    /// <param name="finalPosition"></param>
-    /// <param name="numberOfPoints"></param>
-    /// <returns></returns>
-    static Vector3[] GetLinePositions(Vector3 initialPosition, Vector3 finalPosition, int numberOfPoints)
+    void UpdateLinePointsAndSegments(Vector3 initialPosition, Vector3 finalPosition, int numberOfPoints)
     {
         if (numberOfPoints < 2)
         {
@@ -221,19 +217,46 @@ public class Line : MonoBehaviour
             throw new System.ArgumentException("Final position must have value", nameof(finalPosition));
         }
 
-        var linePositions = new Vector3[numberOfPoints];
-        linePositions[0] = initialPosition;
-        linePositions[numberOfPoints - 1] = finalPosition;
+        _linePoints = new LinePoint[numberOfPoints];
+        _lineSegments = new LineSegment[numberOfPoints - 1];
+
+        _linePoints[0] = new LinePoint
+        {
+            position = initialPosition,
+            prevPosition = initialPosition,
+            locked = true
+        };
+        _linePoints[numberOfPoints - 1] = new LinePoint
+        {
+            position = finalPosition,
+            prevPosition = finalPosition,
+            locked = true
+        };
 
         if (numberOfPoints > 2)
         {
             for (var i = 1; i < numberOfPoints - 1; i++)
             {
-                linePositions[i] = Vector3.Lerp(initialPosition, finalPosition, i / (float)(numberOfPoints - 1));
+                var pointPosition = Vector3.Lerp(initialPosition, finalPosition, i / (float)(numberOfPoints - 1));
+
+                _linePoints[i] = new LinePoint
+                {
+                    position = pointPosition,
+                    prevPosition = pointPosition,
+                    locked = false
+                };
             }
         }
 
-        return linePositions;
+        for (var i = 0; i < numberOfPoints - 1; i++)
+        {
+            _lineSegments[i] = new LineSegment
+            {
+                pointA = _linePoints[i],
+                pointB = _linePoints[i + 1],
+                length = Vector3.Distance(_linePoints[1].position, _linePoints[i + 1].position)
+            };
+        }
     }
 
     /// <summary>
@@ -241,10 +264,10 @@ public class Line : MonoBehaviour
     /// </summary>
     /// <param name="lineRenderer"></param>
     /// <param name="linePositions"></param>
-    static void UpdateLineRendererPositions(LineRenderer lineRenderer, Vector3[] linePositions)
+    static void UpdateLineRendererPositions(LineRenderer lineRenderer, IEnumerable<Vector3> linePositions)
     {
-        lineRenderer.positionCount = linePositions.Length;
-        lineRenderer.SetPositions(linePositions);
+        lineRenderer.positionCount = linePositions.Count();
+        lineRenderer.SetPositions(linePositions.ToArray());
     }
 
     /// <summary>
@@ -253,12 +276,7 @@ public class Line : MonoBehaviour
     /// <returns></returns>
     float GetLineLength()
     {
-        float lineLength = 0;
-        for (var i = 1; i < numberOfPoints; i++)
-        {
-            lineLength += (_linePositions[i] - _linePositions[i - 1]).magnitude;
-        }
-        return lineLength;
+        return _lineSegments.Sum(l => l.length);
     }
 
     #endregion
@@ -303,22 +321,23 @@ public class Line : MonoBehaviour
 
     void RetractLine()
     {
-        var originalPositions = _linePositions.ClonePositions();
+        var linePositions = _linePoints.Select(p => p.position).ToArray();
+        var originalPositions = linePositions.ClonePositions();
         var removedPositions = new HashSet<int>();
 
         //start at 1, 0 is always starting position
-        for (var i = 1; i < _linePositions.Length; i++)
+        for (var i = 1; i < linePositions.Length; i++)
         {
             var direction = (originalPositions[i - 1] - originalPositions[i]).normalized;
             var moveAmount = direction * retractingSpeed * Time.deltaTime;
             moveAmount -= Vector3.up * _lineGravitySpeed * Time.deltaTime;
-            _linePositions[i] += moveAmount;
-            if (Vector3.Distance(_linePositions[i - 1], _linePositions[i]) < 0.1f)
+            linePositions[i] += moveAmount;
+            if (Vector3.Distance(linePositions[i - 1], linePositions[i]) < 0.1f)
             {
                 removedPositions.Add(i);
             }
         }
-        var newPositionsCount = _linePositions.Length - removedPositions.Count;
+        var newPositionsCount = linePositions.Length - removedPositions.Count;
 
         if (newPositionsCount == 1)
         {
@@ -327,42 +346,76 @@ public class Line : MonoBehaviour
         else
         {
             var newPositions = new Vector3[newPositionsCount];
-            for (int j = 0, k = 0; j < _linePositions.Length; j++)
+            for (int j = 0, k = 0; j < linePositions.Length; j++)
             {
                 if (!removedPositions.Contains(j))
                 {
-                    newPositions[k++] = _linePositions[j];
+                    newPositions[k++] = linePositions[j];
                 }
             }
-            _linePositions = newPositions;
+            linePositions = newPositions;
 
             //apply hook gravity to last point
-            _linePositions[_linePositions.Length - 1] -= Vector3.up * _gravitySpeed * Time.deltaTime;
+            linePositions[linePositions.Length - 1] -= Vector3.up * _gravitySpeed * Time.deltaTime;
             //update hook position
-            transform.position = _linePositions[_linePositions.Length - 1];
+            transform.position = linePositions[linePositions.Length - 1];
 
-            UpdateLineRendererPositions(_lineRenderer, _linePositions);
+            UpdateLineRendererPositions(_lineRenderer, linePositions);
         }
     }
 
     void ClimbLine()
     {
-        var originalPositions = _linePositions.ClonePositions();
+        var linePositions = _linePoints.Select(p => p.position).ToArray();
+        var originalPositions = linePositions.ClonePositions();
 
         //start at 0, last one is always hook position which is static here
-        for (var i = 0; i < _linePositions.Length - 1; i++)
+        for (var i = 0; i < linePositions.Length - 1; i++)
         {
             var direction = (originalPositions[i + 1] - originalPositions[i]).normalized;
             var moveAmount = direction * retractingSpeed * Time.deltaTime;
             moveAmount -= Vector3.up * _lineGravitySpeed * Time.deltaTime;
-            _linePositions[i] += moveAmount;
+            linePositions[i] += moveAmount;
         }
 
-        var newPosition = OnClimbing?.Invoke(_linePositions[0]);
+        var newPosition = OnClimbing?.Invoke(linePositions[0]);
         if (newPosition.HasValue)
-            _linePositions[0] = newPosition.Value;
+            linePositions[0] = newPosition.Value;
 
-        UpdateLineRendererPositions(_lineRenderer, _linePositions);
+        UpdateLineRendererPositions(_lineRenderer, linePositions);
+    }
+
+    public void UpdatePositions()
+    {
+        foreach (var point in _linePoints)
+        {
+            if (!point.locked)
+            {
+                Vector3 positionBeforeUpdate = point.position;
+                point.position += point.position - point.prevPosition;
+                point.position += gravity * Time.deltaTime * Time.deltaTime * Vector3.down;
+                point.prevPosition = positionBeforeUpdate;
+            }
+        }
+
+        for (int i = 0; i < numberOfIterations; i++)
+        {
+            foreach (var stick in _lineSegments)
+            {
+                var center = stick.Center;
+                var direction = stick.Direction;
+                var halfLength = stick.length / 2;
+                var halfDirection = direction * halfLength;
+                if (!stick.pointA.locked)
+                {
+                    stick.pointA.position = center + halfDirection;
+                }
+                if (!stick.pointB.locked)
+                {
+                    stick.pointB.position = center - halfDirection;
+                }
+            }
+        }
     }
 
     #endregion
@@ -400,6 +453,32 @@ public class Line : MonoBehaviour
     }
 
     #endregion
+}
+
+public class LineSegment
+{
+    public LinePoint pointA, pointB;
+    public float length;
+    public Vector3 Center
+    {
+        get
+        {
+            return (pointA.position + pointB.position) / 2;
+        }
+    }
+    public Vector3 Direction
+    {
+        get
+        {
+            return (pointA.position - pointB.position).normalized;
+        }
+    }
+}
+
+public class LinePoint
+{
+    public Vector3 position, prevPosition;
+    public bool locked;
 }
 
 public enum LineState
