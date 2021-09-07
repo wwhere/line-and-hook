@@ -254,7 +254,7 @@ public class Line : MonoBehaviour
             {
                 pointA = _linePoints[i],
                 pointB = _linePoints[i + 1],
-                length = Vector3.Distance(_linePoints[1].position, _linePoints[i + 1].position)
+                length = Vector3.Distance(_linePoints[i].position, _linePoints[i + 1].position)
             };
         }
     }
@@ -308,8 +308,8 @@ public class Line : MonoBehaviour
 
     Vector3 GetExtendingMoveAmount()
     {
-        var move = transform.right * _speed * Time.deltaTime;
-        move -= Vector3.up * _gravitySpeed * Time.deltaTime;
+        var move = _speed * Time.deltaTime * transform.right;
+        move -= _gravitySpeed * Time.deltaTime * Vector3.up;
         return move;
     }
     void AlignHookToMovement(Vector3 move)
@@ -385,8 +385,12 @@ public class Line : MonoBehaviour
         UpdateLineRendererPositions(_lineRenderer, linePositions);
     }
 
-    public void UpdatePositions()
+    public Vector3 UpdatePositions(Vector3 firstPointPosition, bool isFirstPointLocked)
     {
+        _linePoints[0].prevPosition = _linePoints[0].position;
+        _linePoints[0].position = firstPointPosition;
+        _linePoints[0].locked = isFirstPointLocked;
+
         foreach (var point in _linePoints)
         {
             if (!point.locked)
@@ -416,6 +420,8 @@ public class Line : MonoBehaviour
                 }
             }
         }
+        UpdateLineRendererPositions(_lineRenderer, _linePoints.Select(p => p.position));
+        return _linePoints[0].position;
     }
 
     #endregion

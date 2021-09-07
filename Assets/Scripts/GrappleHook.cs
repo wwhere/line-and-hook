@@ -27,7 +27,7 @@ public class GrappleHook : MonoBehaviour
         }
     }
 
-    public Vector3 UpdatePositions(Vector3 moveAmount)
+    public Vector3 UpdatePositions(Vector3 moveAmount, bool isGrounded)
     {
         var newMoveAmount = moveAmount;
         switch (_state)
@@ -37,7 +37,7 @@ public class GrappleHook : MonoBehaviour
             case GrappleHookState.Firing:
                 break;
             case GrappleHookState.ShotComplete:
-                _firedLine.UpdatePositions();
+                newMoveAmount = _firedLine.UpdatePositions(transform.position + moveAmount, isGrounded) - transform.position;
                 break;
             case GrappleHookState.GettingReadyToFire:
                 break;

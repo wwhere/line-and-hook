@@ -92,8 +92,9 @@ public class Player : MonoBehaviour
         UpdateGravitySpeed();
 
         //Apply gravity to vertical position of player
-        var verticalMoveAmount = _gravitySpeed * Time.deltaTime;        
-        if (IsGrounded(ref verticalMoveAmount))
+        var verticalMoveAmount = _gravitySpeed * Time.deltaTime;
+        var isGrounded = IsGrounded(ref verticalMoveAmount);
+        if (isGrounded)
         {
             //Reset gravity speed to 0 if touching ground
             _gravitySpeed = 0;
@@ -102,7 +103,7 @@ public class Player : MonoBehaviour
         _moveAmount = UpdateForVerticalCollisions(_moveAmount);
 
         //Get position from hook and line
-        _moveAmount = _grappleHook.UpdatePositions(_moveAmount);
+        _moveAmount = _grappleHook.UpdatePositions(_moveAmount, isGrounded);
 
         //Adjust based on collisions
         _moveAmount = UpdateForHorizontalCollisions(_moveAmount);
