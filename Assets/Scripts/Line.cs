@@ -20,14 +20,14 @@ public class Line : MonoBehaviour
     public AudioClip impactSound;
     public int numberOfIterations = 10;
 
-    [HideInInspector]
+    //[HideInInspector]
     public LineState LineState = LineState.Idle;
 
     Material _lineRendererMaterial;
     LineRenderer _lineRenderer;
     Transform _startingPosition;
-    LinePoint[] _linePoints;
-    LineSegment[] _lineSegments;
+    public LinePoint[] _linePoints;
+    public LineSegment[] _lineSegments;
 
     float _speed;
     float _gravitySpeed;
@@ -55,7 +55,7 @@ public class Line : MonoBehaviour
         _lineGravitySpeed = 0;
         _isClimbing = false;
 
-        LineState = LineState.Idle;
+        //LineState = LineState.Idle;
     }
 
     void Update()
@@ -67,12 +67,18 @@ public class Line : MonoBehaviour
                 break;
             case LineState.Hooked:
                 HandleHooked();
+
                 break;
             case LineState.Unhooked:
                 HandleUnhooked();
                 break;
             case LineState.Retracting:
                 HandleRetracting();
+                break;
+            case LineState.Testing:
+                UpdateLinePointsAndSegments(_linePoints[0].position, _linePoints[1].position, numberOfPoints);
+                UpdateLineRendererPositions(_lineRenderer, _linePoints.Select(l => l.position));
+                GetHooked();
                 break;
             default:
             case LineState.Idle:
@@ -94,6 +100,8 @@ public class Line : MonoBehaviour
 
             _isClimbing = false;
         }
+
+        UpdatePositions(_linePoints[0].position, true);
     }
 
     void HandleExtending()
@@ -128,7 +136,7 @@ public class Line : MonoBehaviour
     public event System.Action OnStopExtending;
 
     public event System.Action OnGettingHooked;
-    public event System.Func<Vector3, Vector3> OnClimbing;
+    public event System.Func<Vector2, Vector2> OnClimbing;
     public event System.Action OnReleasingHooked;
 
     public event System.Action OnGettingUnhooked;
@@ -202,7 +210,7 @@ public class Line : MonoBehaviour
 
     #region Helper functions
 
-    void UpdateLinePointsAndSegments(Vector3 initialPosition, Vector3 finalPosition, int numberOfPoints)
+    void UpdateLinePointsAndSegments(Vector2 initialPosition, Vector2 finalPosition, int numberOfPoints)
     {
         if (numberOfPoints < 2)
         {
@@ -230,14 +238,14 @@ public class Line : MonoBehaviour
         {
             position = finalPosition,
             prevPosition = finalPosition,
-            locked = true
+            locked = false
         };
 
         if (numberOfPoints > 2)
         {
             for (var i = 1; i < numberOfPoints - 1; i++)
             {
-                var pointPosition = Vector3.Lerp(initialPosition, finalPosition, i / (float)(numberOfPoints - 1));
+                var pointPosition = Vector2.Lerp(initialPosition, finalPosition, i / (float)(numberOfPoints - 1));
 
                 _linePoints[i] = new LinePoint
                 {
@@ -254,7 +262,7 @@ public class Line : MonoBehaviour
             {
                 pointA = _linePoints[i],
                 pointB = _linePoints[i + 1],
-                length = Vector3.Distance(_linePoints[i].position, _linePoints[i + 1].position)
+                length = Vector2.Distance(_linePoints[i].position, _linePoints[i + 1].position)
             };
         }
     }
@@ -264,10 +272,10 @@ public class Line : MonoBehaviour
     /// </summary>
     /// <param name="lineRenderer"></param>
     /// <param name="linePositions"></param>
-    static void UpdateLineRendererPositions(LineRenderer lineRenderer, IEnumerable<Vector3> linePositions)
+    static void UpdateLineRendererPositions(LineRenderer lineRenderer, IEnumerable<Vector2> linePositions)
     {
         lineRenderer.positionCount = linePositions.Count();
-        lineRenderer.SetPositions(linePositions.ToArray());
+        lineRenderer.SetPositions(linePositions.Select(lp => new Vector3(lp.x,lp.y,0)).ToArray());
     }
 
     /// <summary>
@@ -306,15 +314,15 @@ public class Line : MonoBehaviour
         _lineGravitySpeed = Mathf.Min(maxLineGravitySpeed, _lineGravitySpeed);
     }
 
-    Vector3 GetExtendingMoveAmount()
+    Vector2 GetExtendingMoveAmount()
     {
-        var move = _speed * Time.deltaTime * transform.right;
-        move -= _gravitySpeed * Time.deltaTime * Vector3.up;
+        var move = _speed * Time.deltaTime * (Vector2)transform.right;
+        move -= _gravitySpeed * Time.deltaTime * Vector2.up;
         return move;
     }
-    void AlignHookToMovement(Vector3 move)
+    void AlignHookToMovement(Vector2 move)
     {
-        var lineUpwards = Vector3.Cross(move, Vector3.back).normalized;
+        var lineUpwards = Vector2.Perpendicular(move).normalized;
         Quaternion rotation = Quaternion.LookRotation(Vector3.forward, lineUpwards);
         transform.rotation = Quaternion.RotateTowards(transform.rotation, rotation, _speed * Time.deltaTime);
     }
@@ -330,9 +338,9 @@ public class Line : MonoBehaviour
         {
             var direction = (originalPositions[i - 1] - originalPositions[i]).normalized;
             var moveAmount = direction * retractingSpeed * Time.deltaTime;
-            moveAmount -= Vector3.up * _lineGravitySpeed * Time.deltaTime;
+            moveAmount -= Vector2.up * _lineGravitySpeed * Time.deltaTime;
             linePositions[i] += moveAmount;
-            if (Vector3.Distance(linePositions[i - 1], linePositions[i]) < 0.1f)
+            if (Vector2.Distance(linePositions[i - 1], linePositions[i]) < 0.1f)
             {
                 removedPositions.Add(i);
             }
@@ -345,7 +353,7 @@ public class Line : MonoBehaviour
         }
         else
         {
-            var newPositions = new Vector3[newPositionsCount];
+            var newPositions = new Vector2[newPositionsCount];
             for (int j = 0, k = 0; j < linePositions.Length; j++)
             {
                 if (!removedPositions.Contains(j))
@@ -356,7 +364,7 @@ public class Line : MonoBehaviour
             linePositions = newPositions;
 
             //apply hook gravity to last point
-            linePositions[linePositions.Length - 1] -= Vector3.up * _gravitySpeed * Time.deltaTime;
+            linePositions[linePositions.Length - 1] -= Vector2.up * _gravitySpeed * Time.deltaTime;
             //update hook position
             transform.position = linePositions[linePositions.Length - 1];
 
@@ -374,7 +382,7 @@ public class Line : MonoBehaviour
         {
             var direction = (originalPositions[i + 1] - originalPositions[i]).normalized;
             var moveAmount = direction * retractingSpeed * Time.deltaTime;
-            moveAmount -= Vector3.up * _lineGravitySpeed * Time.deltaTime;
+            moveAmount -= Vector2.up * _lineGravitySpeed * Time.deltaTime;
             linePositions[i] += moveAmount;
         }
 
@@ -385,19 +393,23 @@ public class Line : MonoBehaviour
         UpdateLineRendererPositions(_lineRenderer, linePositions);
     }
 
-    public Vector3 UpdatePositions(Vector3 firstPointPosition, bool isFirstPointLocked)
+    public Vector2 UpdatePositions(Vector2 firstPointPosition, bool isFirstPointLocked)
     {
         _linePoints[0].prevPosition = _linePoints[0].position;
         _linePoints[0].position = firstPointPosition;
         _linePoints[0].locked = isFirstPointLocked;
-
-        foreach (var point in _linePoints)
+        for (int i = 0; i < _linePoints.Length; i++)
         {
+            var point = _linePoints[i];
             if (!point.locked)
-            {
-                Vector3 positionBeforeUpdate = point.position;
+            {                
+                Vector2 positionBeforeUpdate = point.position;
                 point.position += point.position - point.prevPosition;
-                point.position += gravity * Time.deltaTime * Time.deltaTime * Vector3.down;
+                point.position += gravity * Time.deltaTime * Time.deltaTime * Vector2.down;
+                //if (i ==0)
+                //{
+                //    point.position += point.position - point.prevPosition;
+                //}
                 point.prevPosition = positionBeforeUpdate;
             }
         }
@@ -461,18 +473,19 @@ public class Line : MonoBehaviour
     #endregion
 }
 
+[System.Serializable]
 public class LineSegment
 {
     public LinePoint pointA, pointB;
     public float length;
-    public Vector3 Center
+    public Vector2 Center
     {
         get
         {
             return (pointA.position + pointB.position) / 2;
         }
     }
-    public Vector3 Direction
+    public Vector2 Direction
     {
         get
         {
@@ -481,9 +494,10 @@ public class LineSegment
     }
 }
 
+[System.Serializable]
 public class LinePoint
 {
-    public Vector3 position, prevPosition;
+    public Vector2 position, prevPosition;
     public bool locked;
 }
 
@@ -493,5 +507,6 @@ public enum LineState
     Extending,
     Hooked,
     Unhooked,
-    Retracting
+    Retracting,
+    Testing
 };

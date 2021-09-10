@@ -17,7 +17,7 @@ public class Player : MonoBehaviour
     float _horizontalRaySeparation;
     float _verticalRaySeparation;
 
-    Vector3 _moveAmount;
+    Vector2 _moveAmount;
     float _gravitySpeed;
 
     GrappleHook _grappleHook;
@@ -99,7 +99,7 @@ public class Player : MonoBehaviour
             //Reset gravity speed to 0 if touching ground
             _gravitySpeed = 0;
         }
-        _moveAmount = new Vector3(Input.GetAxis("Horizontal") * speed * Time.deltaTime, -verticalMoveAmount, 0);
+        _moveAmount = new Vector2(Input.GetAxis("Horizontal") * speed * Time.deltaTime, -verticalMoveAmount);
         _moveAmount = UpdateForVerticalCollisions(_moveAmount);
 
         //Get position from hook and line
@@ -121,18 +121,18 @@ public class Player : MonoBehaviour
         }
     }
 
-    Vector3 UpdatePositionWhenReeling(Vector3 newPosition)
+    Vector2 UpdatePositionWhenReeling(Vector2 newPosition)
     {
         transform.position = newPosition;
         return transform.position;
     }
 
-    Vector3 UpdateForVerticalCollisions(Vector3 moveAmount)
+    Vector2 UpdateForVerticalCollisions(Vector2 moveAmount)
     {
         return moveAmount;
     }
 
-    Vector3 UpdateForHorizontalCollisions(Vector3 moveAmount)
+    Vector2 UpdateForHorizontalCollisions(Vector2 moveAmount)
     {
         return moveAmount;
     }
@@ -166,7 +166,7 @@ public class Player : MonoBehaviour
         }
     }
 
-    static Vector3 GetMouseWorldPosition()
+    static Vector2 GetMouseWorldPosition()
     {
         Vector3 mousePos = Input.mousePosition;
         mousePos.z = Camera.main.nearClipPlane;

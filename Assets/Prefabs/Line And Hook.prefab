@@ -238,18 +238,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2562fbcb0c24dc847bb2432ab48686d7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  speed: 10
   retractingSpeed: 20
   maxLineLength: 80
   numberOfPoints: 10
   gravity: 5
+  maxGravitySpeed: 8
   lineGravity: 2
+  maxLineGravitySpeed: 6
   hookRenderer: {fileID: 5137395297770867913}
   breakEffect: {fileID: 7718236225986046474}
   layerMask:
     serializedVersion: 2
     m_Bits: 128
   impactSound: {fileID: 8300000, guid: 30dcccfee7dcc744aae74cba53b237e8, type: 3}
+  numberOfIterations: 10
+  extraImpulse: 1.2
+  LineState: 0
 --- !u!120 &7722036764551162870
 LineRenderer:
   m_ObjectHideFlags: 0

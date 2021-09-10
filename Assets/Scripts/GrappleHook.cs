@@ -27,7 +27,7 @@ public class GrappleHook : MonoBehaviour
         }
     }
 
-    public Vector3 UpdatePositions(Vector3 moveAmount, bool isGrounded)
+    public Vector2 UpdatePositions(Vector2 moveAmount, bool isGrounded)
     {
         var newMoveAmount = moveAmount;
         switch (_state)
@@ -37,7 +37,8 @@ public class GrappleHook : MonoBehaviour
             case GrappleHookState.Firing:
                 break;
             case GrappleHookState.ShotComplete:
-                newMoveAmount = _firedLine.UpdatePositions(transform.position + moveAmount, isGrounded) - transform.position;
+                var newPosition = _firedLine.UpdatePositions(new Vector2(transform.position.x + moveAmount.x, transform.position.y + moveAmount.y), isGrounded);
+                newMoveAmount = new Vector2(newPosition.x - transform.position.x, newPosition.y - transform.position.y);
                 break;
             case GrappleHookState.GettingReadyToFire:
                 break;
@@ -71,13 +72,13 @@ public class GrappleHook : MonoBehaviour
         _state = GrappleHookState.ReadyToFire;
     }
 
-    public Line Fire(Vector3 fromPosition, Vector3 toPosition)
+    public Line Fire(Vector2 fromPosition, Vector2 toPosition)
     {
         if (_state == GrappleHookState.ReadyToFire)
         {
             PlayFireLineSound();
             var direction = (toPosition - fromPosition).normalized;
-            var lineUpwards = Vector3.Cross(direction, Vector3.back).normalized;
+            var lineUpwards = Vector2.Perpendicular(direction).normalized;
             Quaternion rotation = Quaternion.LookRotation(Vector3.forward, lineUpwards);
             _firedLine = GameObject.Instantiate(lineAndHook, fromPosition, rotation).GetComponent<Line>();
 
@@ -109,9 +110,9 @@ public class GrappleHook : MonoBehaviour
         }
     }
 
-    public event System.Func<Vector3, Vector3> OnReeling;
+    public event System.Func<Vector2, Vector2> OnReeling;
 
-    Vector3 UpdatePositionWhenClimbing(Vector3 newPosition)
+    Vector2 UpdatePositionWhenClimbing(Vector2 newPosition)
     {
         transform.position = newPosition;
         if (OnReeling != null)
